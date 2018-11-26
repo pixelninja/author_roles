@@ -48,7 +48,7 @@ jQuery(function(){
 		for(i=0; i<roles_hidden_fields.length; i++)
 		{
 			var field_id = roles_hidden_fields[i];
-			$("#field-" + field_id).hide();
+			$("#field-" + field_id).hide().addClass('role-hidden');
 		}
 	}
 });
