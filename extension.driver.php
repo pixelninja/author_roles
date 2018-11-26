@@ -1,18 +1,12 @@
 <?php
 Class extension_author_roles extends Extension
 {
-	// About this extension:
-	public function about()
-	{
-		return array(
-			'name' => 'Author Roles',
-			'version' => '1.2',
-			'release-date' => '2012-10-04',
-			'author' => array(
-				'name' => 'Twisted Interactive',
-				'website' => 'http://www.twisted.nl'),
-			'description' => 'Author Roles for Symphony 2.2 and above'
-		);
+	public function getAuthor() {
+	    if (is_callable(array('Symphony', 'Author'))) {
+	        return Symphony::Author();
+	    } else {
+	        return Administration::instance()->Author;
+	    }
 	}
 
 	// Set the delegates:
@@ -79,7 +73,7 @@ Class extension_author_roles extends Extension
 	public function extendNavigation($context) {
 		$data = $this->getCurrentAuthorRoleData();
 
-		if($data == false || Administration::instance()->Author->isDeveloper()) {
+		if($data == false || $this->getAuthor()->isDeveloper()) {
 			return;
 		}
 
@@ -153,7 +147,7 @@ Class extension_author_roles extends Extension
 	 *  The context, providing the form and the author object
 	 */
 	public function addRolePicker($context) {
-		if(Administration::instance()->Author->isDeveloper()) {
+		if($this->getAuthor()->isDeveloper()) {
 			$group = new XMLElement('fieldset');
 			$group->setAttribute('class', 'settings');
 			$group->appendChild(new XMLElement('legend', __('Author Role')));
@@ -232,7 +226,7 @@ Class extension_author_roles extends Extension
 	private function adjustIndex($context, $callback) {
 		$data = $this->getCurrentAuthorRoleData();
 
-		if($data == false || Administration::instance()->Author->isDeveloper()) {
+		if($data == false || $this->getAuthor()->isDeveloper()) {
 			return;
 		}
 
@@ -256,9 +250,11 @@ Class extension_author_roles extends Extension
 					$children = current($context['oPage']->Context->getChildrenByName('ul'))->getChildrenByName('li');
 
 					foreach($children as $key => $child) {
-						if(strpos($child->getValue(),__('Create New')) !== false) {
-							$value = $child->getValue();
-							$child->setValue('<span>'.strip_tags(str_replace(__('Create New'), '', $value)).'</span><span class="create" />');
+						$value = $child->getValue();
+
+						if(strpos($value->getValue(),__('Create New')) !== false) {
+							$value->setAttribute('href', '');
+							$value->setAttribute('class', 'button disabled');
 						}
 					}
 				}
@@ -266,7 +262,7 @@ Class extension_author_roles extends Extension
 				if($rules['own_entries'] == 1 || $rules['edit'] == 0 || $rules['delete'] == 0 || $rules['use_filter'] == 1) {
 					// For only show entries created by this author:
 					// Get a list of entry id's created by this author:
-					$id_author = Administration::instance()->Author->get('id');
+					$id_author = $this->getAuthor()->get('id');
 
 					if($rules['own_entries'] == 1) {
 						// Only get the ID's of the current author to begin with:
@@ -364,7 +360,10 @@ Class extension_author_roles extends Extension
 								elseif($formChild->getName() == 'div' && $formChild->getAttribute('class') == 'actions') {
 									// Only proceed if you can either edit or delete. Otherwise it would have much sense to have an apply-button here...
 									if($rules['delete'] == 1 || $rules['edit'] == 1) {
-										$child = self::findChildren($formChild,'select');
+
+										foreach($formChild->getChildren() as $children) {
+											$child = $children->getChildren();
+										}
 										$child = $child[0];
 
 										$newSelect = new XMLElement('select', null, $child->getAttributes());
@@ -428,7 +427,7 @@ Class extension_author_roles extends Extension
 	public function makePreAdjustements($context) {
 		$data = $this->getCurrentAuthorRoleData();
 
-		if($data == false || Administration::instance()->Author->isDeveloper()) {
+		if($data == false || $this->getAuthor()->isDeveloper()) {
 			return;
 		}
 
@@ -445,6 +444,8 @@ Class extension_author_roles extends Extension
 				}
 			}
 		}
+
+        Administration::instance()->Page->addStylesheetToHead(URL.'/extensions/author_roles/assets/author_roles.index.css');
 	}
 
 	// return all ancestors of the given element with the given names
@@ -455,12 +456,15 @@ Class extension_author_roles extends Extension
 		}
 
 		$children = array();
+		$getChildren = $element->getChildren();
 
-		foreach($element->getChildren() as $child) {
-			$children = array_merge($children, self::findChildren($child,$names));
+		if (!empty($element->getChildren())) {
+			foreach($element->getChildren() as $child) {
+				$children = array_merge($children, self::findChildren($child,$names));
 
-			if(in_array($child->getName(), $names )) {
-				$children[] = $child;
+				if(in_array($child->getName(), $names )) {
+					$children[] = $child;
+				}
 			}
 		}
 
@@ -493,9 +497,10 @@ Class extension_author_roles extends Extension
 	private function adjustEntryEditor($context, $callback) {
 		$data = $this->getCurrentAuthorRoleData();
 
-		if($data == false || Administration::instance()->Author->isDeveloper()) {
+		if($data == false || $this->getAuthor()->isDeveloper()) {
 			return;
 		}
+
 
 		// Set the hidden fields:
 		$hiddenFields = array();
@@ -550,7 +555,7 @@ Class extension_author_roles extends Extension
 								}
 								else {
 									if($rules['edit'] == 0) {
-										foreach(self::findChildren($formChild,'input,select,textarea') as $child) {
+										foreach($contentsChild->getChildren() as $child) {
 											$child->setAttribute('disabled','disabled');
 										}
 									}
@@ -580,7 +585,7 @@ Class extension_author_roles extends Extension
 	 */
 	private function getCurrentAuthorRoleData() {
 		if(Administration::instance()->isLoggedIn()) {
-			$id_author = Administration::instance()->Author->get('id');
+			$id_author = $this->getAuthor()->get('id');
 			$id_role   = $this->getAuthorRole($id_author);
 
 			if($id_role != false) {
@@ -601,7 +606,7 @@ Class extension_author_roles extends Extension
 	public function modifyAreas($context) {
 		$data = $this->getCurrentAuthorRoleData();
 
-		if($data == false || Administration::instance()->Author->isDeveloper()) {
+		if($data == false || $this->getAuthor()->isDeveloper()) {
 			return;
 		}
 
@@ -622,7 +627,7 @@ Class extension_author_roles extends Extension
 	 *  The context
 	 */
 	public function saveAuthorRole($context) {
-		if(Administration::instance()->Author->isDeveloper()) {
+		if($this->getAuthor()->isDeveloper()) {
 			$id_role = intval($_POST['fields']['role']);
 			$id_author = $context['author']->get('id');
 

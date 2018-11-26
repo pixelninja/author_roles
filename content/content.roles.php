@@ -11,6 +11,14 @@
 		protected $_data = array();
 		protected $_id_role = 0;
 		
+		public function getAuthor() {
+		    if (is_callable(array('Symphony', 'Author'))) {
+		        return Symphony::Author();
+		    } else {
+		        return Administration::instance()->Author;
+		    }
+		}
+		
 		function __construct(){
 			parent::__construct();
 			$this->_uri = URL . '/symphony/extension/author_roles/';
@@ -38,7 +46,7 @@
 					$this->pageAlert(__('Role not saved: Please enter a name.'), Alert::ERROR);
 				}
 			}
-			parent::addStylesheetToHead(URL . '/extensions/author_roles/assets/author_roles.css', 'screen', 70);
+			parent::addStylesheetToHead(URL . '/extensions/author_roles/assets/author_roles.content.css', 'screen', 70);
 			parent::addScriptToHead(URL . '/extensions/author_roles/assets/author_roles.js', 71);
 			parent::build($context);
 		}

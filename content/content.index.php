@@ -5,6 +5,14 @@
 	{
 		protected $_uri = null;
 		protected $_driver = null;
+		
+		public function getAuthor() {
+		    if (is_callable(array('Symphony', 'Author'))) {
+		        return Symphony::Author();
+		    } else {
+		        return Administration::instance()->Author;
+		    }
+		}
 
 		/**
 		 * Constructor
@@ -21,7 +29,7 @@
 		 */
 		public function build($context)
 		{
-			if(Administration::instance()->Author->isDeveloper()) {
+			if($this->getAuthor()->isDeveloper()) {
 				if($_POST['with-selected'] == 'delete' && is_array($_POST['items']))
 				{
 					foreach($_POST['items'] as $id_role => $value)
